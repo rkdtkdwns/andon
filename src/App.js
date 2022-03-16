@@ -1,25 +1,37 @@
-import logo from './logo.svg';
+import React from 'react';
 import './App.css';
+import {Routes, Route, useNavigate} from "react-router-dom";
+import {Layout, Menu} from "antd";
+import {PATH_GENERAL, PATH_MACHINE} from "./router/paths";
+import MachineList from "./pages/MachineList";
+
+const {Header, Sider} = Layout;
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    let navigate = useNavigate();
+    return (
+        <Layout style={{height: '100vh'}}>
+            <Sider>
+                <div style={{color: '#333', backgroundColor: '#eee', padding: 10, fontWeight: 900}}>
+                    하림산업 대시보드
+                </div>
+                <Menu
+                    theme="dark"
+                    mode="inline"
+                    defaultSelectedKeys={[window.location.pathname.substr(1)]}
+                    onClick={({key}) => navigate(`/${key}`)}
+                >
+                    <Menu.Item key={PATH_MACHINE}>공정설비</Menu.Item>
+                </Menu>
+            </Sider>
+            <Layout style={{height: '100vh', overflow: 'auto', backgroundColor: '#fff'}}>
+                <Routes>
+                    <Route path={`/`} element={<MachineList/>}/>
+                    <Route path={`/${PATH_MACHINE}`} element={<MachineList/>}/>
+                </Routes>
+            </Layout>
+        </Layout>
+    );
 }
 
 export default App;
