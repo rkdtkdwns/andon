@@ -13,8 +13,8 @@ export const fetchTagHistory = async (prodLine, tagIndex, start, end) => {
     let sql = `
         SELECT DateAndTime, Millitm, Val
         FROM HARIM_MES_DW.dbo.FloatTable_DM t
-        WHERE ProdLine = ${prodLine} and 
-              TagIndex = ${tagIndex} and
+        WHERE ProdLine = '${prodLine}' and 
+              TagIndex = '${tagIndex}' and
               DateAndTime between '${start}' and '${end}'
         ORDER BY DateAndTime
     `;
@@ -29,8 +29,8 @@ export const fetchTagStats = async (prodLine, tagIndex, start, end) => {
         count(*) as total_count,
         max(Val) as max, min(Val) as min
         from FloatTable_DM
-        where ProdLine = ${prodLine} and 
-              TagIndex = ${tagIndex} and 
+        where ProdLine = '${prodLine}' and 
+              TagIndex = '${tagIndex}' and 
               DateAndTime between '${start}' and '${end}'
     `;
     return postSQL(sql)

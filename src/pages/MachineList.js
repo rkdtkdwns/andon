@@ -1,10 +1,6 @@
 import React, {useContext, useEffect, useState} from 'react';
 import {Input, Typography, Button, AutoComplete, Space, DatePicker} from 'antd';
-import {Line, Area, Gauge, DualAxes} from '@ant-design/charts';
-import {LeftOutlined, RightOutlined, LinkOutlined} from "@ant-design/icons";
 import { makeStyles } from "@material-ui/core/styles";
-import {each, groupBy} from '@antv/util';
-import Moment from 'moment';
 import {
 } from "../db_service/product_detail";
 import {fetchMachines} from "../db_service/product_detail";
@@ -13,26 +9,33 @@ import TagDetail from "./TagDetail";
 const MachineList = (props) => {
     const classes = useStyles(props);
 
-    let start = new Moment().subtract(1, 'months');
-    let end = new Moment();
-    let [dates, setDates] = useState([start, end]);
+    const urlParams = window.location.search ? (Object.fromEntries(new URLSearchParams(window.location.search)) || {}) : {};
+
     let [machines, setMachines] = useState([]);
     let [selected, setSelected] = useState(null);
     let [prodLine, setProdLine] = useState('');
-    let [options, setOptions] = useState([]);
 
     useEffect(()=>{
         fetchMachines().then(res=>{
             let uniqueMachine = {};
+            let toShow;
             res.data.rows.forEach(e=>{
                 let key = e.ProdLine + e.EquipName + e.Channel;
-                if(!uniqueMachine.hasOwnProperty(key)){
+                if(!uniqueMachine.hasOwnProperty(key)) {
                     uniqueMachine[key] = e;
                     uniqueMachine[key].remarks = [];
                 }
                 uniqueMachine[key].remarks.push({name: e.TagName_S, id: e.TagIndex});
+                if(urlParams.prodLine === e.ProdLine.toString() && urlParams.tagIndex === e.TagIndex.toString()){
+                    toShow = Object.assign({id: e.TagIndex, name: e.TagName_S}, {machine: e})
+                }
+
             });
+
             setMachines(Object.values(uniqueMachine));
+            if(toShow){
+                setSelected(toShow)
+            }
         })
     }, []);
 
@@ -75,7 +78,9 @@ const MachineList = (props) => {
                                         fontSize: 10,
                                         display: 'inline-block',
                                     }}
-                                    onClick={()=>setSelected(Object.assign({id: tag.id, name: tag.name}, {machine: e}))}
+                                    onClick={()=>{
+                                        setSelected(Object.assign({id: tag.id, name: tag.name}, {machine: e}))
+                                    }}
                                 >{tag.name}({tag.id})</span>
                             ))}
                         </div>
