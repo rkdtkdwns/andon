@@ -1,4 +1,5 @@
 import {postPDSSQL, postSQL} from "./api";
+import Moment from "moment";
 
 
 export const fetchMachines = async () => {
@@ -38,32 +39,57 @@ export const fetchTagStats = async (prodLine, tagIndex, start, end) => {
 
 export const fetchManufacturingStatus = async () => {
     let sql = `
-        SELECT
-              PA.description AS '품명'
-            , CONVERT(numeric(13, 0) ,  dbo.raMVNumeric(POI.quantity) ) AS '목표생산'
-            , dbo.raMVUoM(POI.quantity) AS UOM
-            , UDA_P.PART_DISPO_CUSTOM_S AS MRP
-            , '-' AS LINE
-        FROM PROCESS_ORDER_ITEM AS POI
-            INNER JOIN PROCESS_ORDER AS PO
-                    ON PO.order_key = POI.order_key
-            INNER JOIN OBJECT_STATE AS POI_OBJECT_STATE
-                    ON POI.order_item_key = POI_OBJECT_STATE.object_key
-                       AND POI_OBJECT_STATE.object_type = 112
-            INNER JOIN STATE AS POI_STATE
-                    ON POI_OBJECT_STATE.state_key = POI_STATE.state_key
-            INNER JOIN PART AS PA
-                    ON PA.part_number = POI.part_number
-            INNER JOIN UDA_Part AS UDA_P
-                    ON PA.part_key = UDA_P.object_key
-            INNER JOIN OBJECT_STATE_HISTORY as ST_TIME
-                ON PO.order_key = ST_TIME.object_key
-            WHERE POI_STATE.state_name IN( 'Running', 'Completing' )
-                AND ST_TIME.transition_name = 'Start'
-                AND ST_TIME.state_name = 'Running'
-                AND UDA_P.part_dispo_custom_s IN('M01', 'M02', 'M03', 'M04', 'M05', 'M06', 'M07', 'M08', 'M09', 'M10')
-                AND CONVERT(CHAR(10), ST_TIME.entry_time, 23) = CONVERT(CHAR(10), GETDATE(), 23)
-            ORDER BY ST_TIME.entry_time desc , MRP
-    `
+    SELECT
+        LINE.PO_NUMBER_S,
+        LINE.PART_NAME_S AS PART_NAME
+        , LINE.PLANNED_QTY_S  AS PLANNED
+        , LINE.UOM_S AS UOM
+        , LINE.MRP_CODE_S AS MRP
+        , db_name AS DB_NAME
+        , tag_index AS TAG_INDEX
+        , LINE_DETAIL_S
+        , LINE_NUMBER_I
+        , PO.order_number AS ORDER_NUM
+    FROM PROCESS_ORDER_ITEM AS POI
+        INNER JOIN PROCESS_ORDER AS PO
+            ON PO.order_key = POI.order_key
+        INNER JOIN AT_RA_ADN_LineInfo AS LINE
+            ON LINE.PO_NUMBER_S= POI.order_item_name
+        INNER JOIN AT_RA_ADN_LineInfo_TAG as LINE_TAG
+            ON LINE_TAG.atr_key = LINE.atr_key
+        INNER JOIN OBJECT_STATE AS POI_OBJECT_STATE
+            ON POI.order_item_key = POI_OBJECT_STATE.object_key
+               AND POI_OBJECT_STATE.object_type = 112
+        INNER JOIN STATE AS POI_STATE
+                ON POI_OBJECT_STATE.state_key = POI_STATE.state_key
+        INNER JOIN PART AS PA
+                ON PA.part_number = POI.part_number
+        INNER JOIN UDA_Part AS UDA_P
+                ON PA.part_key = UDA_P.object_key
+        INNER JOIN OBJECT_STATE_HISTORY as ST_TIME
+            ON PO.order_key = ST_TIME.object_key
+        WHERE POI_STATE.state_name IN( 'Running', 'Completing' )
+            AND ST_TIME.transition_name = 'Start'
+            AND ST_TIME.state_name = 'Running'
+            AND dbo.raMVUoM(POI.quantity) = 'ea'
+            AND CONVERT(CHAR(10), ST_TIME.entry_time, 23) = CONVERT(CHAR(10), GETDATE(), 23)
+        ORDER BY ST_TIME.entry_time desc , MRP;    `
     return postPDSSQL(sql)
+}
+
+export const fetchTagResultData = (dbName, tags) => {
+    let now = new Moment()
+    let sql = `
+        SELECT 
+            TOP 1000
+            TagIndex,
+            Val,
+            DateAndTime
+        FROM FloatTable
+        WHERE TagIndex in (${tags.join(',')}) 
+            AND Val is not null
+            AND DateAndTime > ${now.format('YYYY-MM-DD')}
+        ORDER BY DateAndTime DESC
+    `
+    return postSQL(sql, dbName)
 }

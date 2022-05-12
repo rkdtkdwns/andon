@@ -10,8 +10,8 @@ const api = create({
     baseURL: url,
 });
 
-export const postSQL = async (sql) => {
-    let res = await api.post('mssql', {sql: sql});
+export const postSQL = async (sql, dbName) => {
+    let res = await api.post('dw', {sql: sql, db_name: dbName});
     console.log(res);
     return res
 };
