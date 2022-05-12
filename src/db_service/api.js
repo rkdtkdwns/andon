@@ -15,3 +15,9 @@ export const postSQL = async (sql) => {
     console.log(res);
     return res
 };
+
+export const postPDSSQL = async (sql) => {
+    let res = await api.post('pds', {sql: sql});
+    console.log(res);
+    return res
+}

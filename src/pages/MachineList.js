@@ -2,8 +2,8 @@ import React, {useContext, useEffect, useState} from 'react';
 import {Input, Typography, Button, AutoComplete, Space, DatePicker} from 'antd';
 import { makeStyles } from "@material-ui/core/styles";
 import {
-} from "../db_service/product_detail";
-import {fetchMachines} from "../db_service/product_detail";
+} from "../db_service/service";
+import {fetchMachines} from "../db_service/service";
 import TagDetail from "./TagDetail";
 
 const MachineList = (props) => {

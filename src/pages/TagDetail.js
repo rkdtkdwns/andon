@@ -3,7 +3,7 @@ import {Typography, Descriptions, Button, Table, DatePicker, Space, Input, Modal
 import classNames from "classnames";
 import {LeftOutlined, RightOutlined, LinkOutlined} from "@ant-design/icons";
 import { makeStyles } from "@material-ui/core/styles";
-import {fetchTagHistory, fetchTagStats} from "../db_service/product_detail";
+import {fetchTagHistory, fetchTagStats} from "../db_service/service";
 import { TinyLine, Line, DualAxes } from '@ant-design/plots';
 import Moment from 'moment';
 
@@ -145,21 +145,23 @@ const TagDetail = (props) => {
                     </div>:
                     values.length > 0 &&
                     <div>
-                        <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                            <Descriptions
-                                title="통계 데이터"
-                                bordered
-                                column={{ xxl: 2, xl: 2, lg: 2, md: 2, sm: 2, xs: 1}}
-                                style={{width: '50%'}}
-                                labelStyle={{width: 100}}
-                            >
-                                <Descriptions.Item label="평균">{stat?.mean.toFixed(3)}</Descriptions.Item>
-                                <Descriptions.Item label="표준편차">{stat?.stdev.toFixed(3)}</Descriptions.Item>
-                                <Descriptions.Item label="최소값">{stat?.min}</Descriptions.Item>
-                                <Descriptions.Item label="최대값">{stat?.max}</Descriptions.Item>
-                                <Descriptions.Item label="수신횟수">{stat?.total_count}</Descriptions.Item>
-                            </Descriptions>
-                            <div style={{marginLeft: 20, width: '40%'}}>
+                        <div style={{display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap'}}>
+                            <div style={{width: window.innerWidth > 600 ? '55%' : '100%', marginTop: 10}}>
+                                {console.log(window.innerWidth)}
+                                <Descriptions
+                                    title="통계 데이터"
+                                    bordered
+                                    column={{ xxl: 2, xl: 2, lg: 2, md: 2, sm: 2, xs: 1}}
+                                    labelStyle={{width: 100}}
+                                >
+                                    <Descriptions.Item label="평균">{stat?.mean.toFixed(3)}</Descriptions.Item>
+                                    <Descriptions.Item label="표준편차">{stat?.stdev.toFixed(3)}</Descriptions.Item>
+                                    <Descriptions.Item label="최소값">{stat?.min}</Descriptions.Item>
+                                    <Descriptions.Item label="최대값">{stat?.max}</Descriptions.Item>
+                                    <Descriptions.Item label="수신횟수">{stat?.total_count}</Descriptions.Item>
+                                </Descriptions>
+                            </div>
+                            <div style={{marginLeft: 20, width: window.innerWidth > 600 ? '40%' : '100%', marginTop: 10}}>
                                 <Typography.Title level={5}>산포도</Typography.Title>
                                 <div style={{marginTop: 20}}>
                                     <DualAxes
@@ -184,7 +186,7 @@ const TagDetail = (props) => {
                                 </div>
                             </div>
                         </div>
-                        <div style={{marginTop: -30}}>
+                        <div style={{marginTop: 20}}>
                             <Typography.Title level={5}>추이</Typography.Title>
                             <Line
                                 {...{

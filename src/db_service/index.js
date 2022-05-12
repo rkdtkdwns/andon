@@ -1,3 +1,3 @@
-import 'product_detail';
+import 'src/db_service/service';
 
 
