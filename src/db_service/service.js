@@ -81,7 +81,7 @@ export const fetchTagResultData = (dbName, tags) => {
     let now = new Moment()
     let sql = `
         SELECT 
-            TOP 1000
+            TOP 500
             TagIndex,
             Val,
             DateAndTime

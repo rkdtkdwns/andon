@@ -10,8 +10,10 @@ const {Header, Sider} = Layout;
 
 function App() {
     let navigate = useNavigate();
+    const urlParams = window.location.search ? (Object.fromEntries(new URLSearchParams(window.location.search)) || {}) : {};
     return (
         <Layout style={{height: '100vh'}}>
+            {!urlParams.hidesider &&
             <Sider>
                 <div style={{color: '#333', backgroundColor: '#eee', padding: 10, fontWeight: 900}}>
                     하림산업 대시보드
@@ -25,7 +27,7 @@ function App() {
                     <Menu.Item key={PATH_MACHINE}>공정설비</Menu.Item>
                     <Menu.Item key={PATH_MANUFACTURING}>생산실적현황</Menu.Item>
                 </Menu>
-            </Sider>
+            </Sider>}
             <Layout style={{height: '100vh', overflow: 'auto', backgroundColor: '#fff'}}>
                 <Routes>
                     <Route path={`/`} element={<MachineList/>}/>
