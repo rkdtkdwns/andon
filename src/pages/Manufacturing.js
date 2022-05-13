@@ -76,21 +76,21 @@ const Manufacturing = (props) => {
         setResult(result)
     }
 
+    console.log(window.innerWidth)
+
     return (
-        <div style={{width: '100%', minHeight: '100%', backgroundColor: '#212121', fontWeight: 'bolder'}}>
+        <div style={{minWidth: '100vw', height: '100vh', overflow: 'auto', backgroundColor: '#212121', fontWeight: 'bolder'}}>
             <div style={{padding: '10px'}}>
-                <div style={{fontSize: 40, color: '#fff', display: 'flex', justifyContent: 'space-between'}}>
+                <div style={{fontSize: window.innerWidth * 0.0274, color: '#fff', display: 'flex', justifyContent: 'space-between'}}>
                     <div >{new Moment().format('YYYY-MM-DD')}</div>
                     <div style={{display: 'flex'}}>
                         <TimeClock/>
                         <div style={{marginLeft: 10}}>
                             {urlParams.hidesider ?
                                 <ShrinkOutlined
-                                    style={{fontSize: 40, color: '#fff'}}
                                     onClick={()=>{window.location = '?'}}
                                 /> :
                                 <ArrowsAltOutlined
-                                    style={{fontSize: 40, color: '#fff'}}
                                     onClick={()=>{window.location = '?hidesider=true'}}
                                 />
                             }
@@ -155,12 +155,12 @@ const styles = (theme) => ({
     th: {
         border: '1px solid #fff',
         padding: '10px 10px',
-        fontSize: 40,
+        fontSize: window.innerWidth * 0.025,
     },
     td: {
         border: '1px solid #fff',
         padding: '40px 10px',
-        fontSize: 40,
+        fontSize: window.innerWidth * 0.026,
     }
 });
 

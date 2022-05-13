@@ -28,7 +28,7 @@ function App() {
                     <Menu.Item key={PATH_MANUFACTURING}>생산실적현황</Menu.Item>
                 </Menu>
             </Sider>}
-            <Layout style={{height: '100vh', overflow: 'auto', backgroundColor: '#fff'}}>
+            <Layout style={{height: '100vh', overflow: 'auto'}}>
                 <Routes>
                     <Route path={`/`} element={<MachineList/>}/>
                     <Route path={`/${PATH_MACHINE}`} element={<MachineList/>}/>
