@@ -127,7 +127,6 @@ export const fetchManufacturingStatus = async (lineType) => {
          AND LINE_DETAIL_S like '${lineType}%'
         
         `
-    console.log(sql)
     return postPDSSQL(sql)
 }
 

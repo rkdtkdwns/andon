@@ -17,29 +17,20 @@ const Manufacturing = (props) => {
 
     useEffect(()=>{
         let interval;
-
+        let index = {current: 0};
         fetchManufacturingStatus(lineType).then(res=>{
-            fetchResults(res.data.rows);
+
+            fetchResults(res.data.rows, index);
 
             interval = setInterval(()=>{
-                fetchResults(res.data.rows);
+                fetchResults(res.data.rows, index);
             }, 5000)
         });
 
         return () => clearInterval(interval);
     }, [lineType]);
 
-    const fetchResults = async (products) => {
-        let separator = ':'
-        let tagsMap = products.reduce((r, e)=>{
-            let key = e.DB_NAME + separator + e.TAG_TABLE
-            if(r.hasOwnProperty(key)){
-                r[key].push(e.TAG_INDEX)
-            }else{
-                r[key] = [e.TAG_INDEX]
-            }
-            return r
-        }, {})
+    const fetchResults = async (products, index) => {
         let productTagMap = products.reduce((r, e)=>{
             if(!r.hasOwnProperty(e.PO_NUMBER_S)){
                 r[e.PO_NUMBER_S] = {};
@@ -50,7 +41,26 @@ const Manufacturing = (props) => {
             r[e.PO_NUMBER_S][e.LINE_DETAIL_S].push(e.DB_NAME + '/' + e.TAG_INDEX)
             return r
         }, {})
-        let entries = Object.entries(tagsMap)
+
+        let productKeys = Object.keys(productTagMap).map(e=>parseInt(e));
+        let batchSize = 5;
+        let maxIndex = Math.floor(productKeys.length / batchSize);
+        let candidates = productKeys.slice(index.current * batchSize, (index.current + 1) * batchSize);
+        let currentProducts = products.filter(e=>candidates.includes(e.PO_NUMBER_S))
+        index.current = index.current >= maxIndex ? 0 : index.current + 1;
+
+        let separator = ':'
+        let tagsMap = currentProducts.reduce((r, e)=>{
+            let key = e.DB_NAME + separator + e.TAG_TABLE
+            if(r.hasOwnProperty(key)){
+                r[key].push(e.TAG_INDEX)
+            }else{
+                r[key] = [e.TAG_INDEX]
+            }
+            return r
+        }, {})
+
+        let entries = Object.entries(tagsMap);
         let tagValues = {};
         for(let i=0; i < entries.length; i++){
             let [key, tags] = entries[i];
@@ -63,10 +73,12 @@ const Manufacturing = (props) => {
                 }
             })
         }
+
         let unique = {}
-        products.forEach(e=>{
+        currentProducts.forEach(e=>{
             unique[e.PO_NUMBER_S] = e
         })
+
         let result = Object.entries(unique).map(([poNumber, e])=>{
             let lines = productTagMap[poNumber] || []
             e.innerValue = 0
