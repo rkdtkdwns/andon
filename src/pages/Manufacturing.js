@@ -115,7 +115,12 @@ const Manufacturing = (props) => {
                         </div>
                     </div>
                 </div>
-                <div style={{border: '1px solid #fff', letterSpacing: '30px', color: '#fff', fontSize: 40, textAlign: 'center'}}>
+                <div
+                    style={{
+                        border: '1px solid #fff', letterSpacing: '30px', color: '#fff',
+                        fontSize: window.innerWidth * 0.022, textAlign: 'center'
+                }}
+                >
                     생산실적현황
                 </div>
             <table style={{width: '100%', color: '#fff', borderCollapse: 'collapse', border: '1px solid #fff'}}>
@@ -173,7 +178,8 @@ const styles = (theme) => ({
     th: {
         border: '1px solid #fff',
         padding: '10px 10px',
-        fontSize: window.innerWidth * 0.025,
+        fontSize: window.innerWidth * 0.022,
+        minWidth: window.innerWidth * 0.025 * 6
     },
     td: {
         border: '1px solid #fff',
