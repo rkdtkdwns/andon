@@ -121,11 +121,13 @@ export const fetchManufacturingStatus = async (lineType) => {
              )
         --  AND CONVERT(CHAR(10), ST_TIME.work_start_time, 23) = CONVERT(CHAR(10), GETDATE(), 23)
            AND CONVERT(CHAR(10), ST_TIME.entry_time, 23) = CONVERT(CHAR(10), GETDATE(), 23)
-         and dbo.raMVUoM(POI.quantity) = 'ea'
-         and PA.description not like (N'%멀티%')
-         and PA.description not like (N'%쿠팡%')
+         AND dbo.raMVUoM(POI.quantity) = 'ea'
+         AND PA.description not like (N'%멀티%')
+         AND PA.description not like (N'%쿠팡%')
+         AND LINE_DETAIL_S like '${lineType}%'
         
         `
+    console.log(sql)
     return postPDSSQL(sql)
 }
 
@@ -146,6 +148,5 @@ export const fetchTagResultData = (dbName, tags, tableName) => {
         ) a
         GROUP BY TagIndex
     `
-    console.log(sql)
     return postSQL(sql, dbName)
 }

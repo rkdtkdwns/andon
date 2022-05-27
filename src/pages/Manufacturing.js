@@ -99,6 +99,8 @@ const Manufacturing = (props) => {
                             <Select.Option value="">전체</Select.Option>
                             <Select.Option value="FROZEN">냉동</Select.Option>
                             <Select.Option value="SEASONING">조미</Select.Option>
+                            <Select.Option value="DRY">라면건면</Select.Option>
+                            <Select.Option value="FRY">라면유탕면</Select.Option>
                         </Select>
                     </div>
                     <div style={{display: 'flex'}}>
