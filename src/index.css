@@ -11,3 +11,8 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+div.manufacturing-select > .ant-select-selector {
+  background-color: #212121 !important;
+  color: white;
+}

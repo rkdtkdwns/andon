@@ -1,6 +1,5 @@
 import React, {useContext, useEffect, useState} from 'react';
 import {Typography, Descriptions, Button, Table, DatePicker, Space, Input, Modal, Spin, Select} from 'antd';
-import classNames from "classnames";
 import {LeftOutlined, ShrinkOutlined, ArrowsAltOutlined} from "@ant-design/icons";
 import { makeStyles } from "@material-ui/core/styles";
 import {fetchManufacturingStatus, fetchTagResultData, fetchTagHistory, fetchTagStats} from "../db_service/service";
@@ -103,7 +102,7 @@ const Manufacturing = (props) => {
                         <div>{new Moment().format('YYYY-MM-DD')}</div>
                         <Select
                             defaultValue=""
-                            className={classes.antSelectWrapper}
+                            className={'manufacturing-select'}
                             style={{width: 200, marginLeft: 20, backgroundColor: '#212121'}}
                             onChange={(val)=>{
                                 setLineType(val)
@@ -149,13 +148,14 @@ const Manufacturing = (props) => {
                 </thead>
                 <tbody>
                 {result.map((e, i)=>{
+                    let innerValue = Math.min(e['PLANNED'], e['innerValue'])
                     return (
                         <tr key={i} style={{textAlign: 'center'}}>
                             <td className={classes.td}>{e['PART_NAME']}</td>
                             <td className={classes.td}>{e['PLANNED']} {e['UOM']}</td>
-                            <td className={classes.td}>{e['innerValue']} {e['UOM']}</td>
+                            <td className={classes.td}>{innerValue} {e['UOM']}</td>
                             <td className={classes.td}>{e['outerValue']} BOX</td>
-                            <td className={classes.td}>{e['PLANNED'] ? (e['innerValue']/e['PLANNED'] * 100).toFixed(1) : 0}%</td>
+                            <td className={classes.td}>{e['PLANNED'] ? (innerValue/e['PLANNED'] * 100).toFixed(1) : 0}%</td>
                         </tr>
                     )
                 })}
@@ -200,11 +200,6 @@ const styles = (theme) => ({
         padding: '30px 10px',
         fontSize: window.innerWidth * 0.026,
     },
-    antSelectWrapper: {
-        '& div': {
-            backgroundColor: 'red'
-        }
-    }
 });
 
 

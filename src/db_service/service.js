@@ -74,6 +74,8 @@ export const fetchManufacturingStatus = async (lineType) => {
             AND ST_TIME.state_name = 'Running'
             AND dbo.raMVUoM(POI.quantity) = 'ea'
             AND LINE_DETAIL_S like '${lineType}%'
+            AND POI.description = CONVERT(CHAR(10), GETDATE(), 23)
+
             /*AND CONVERT(CHAR(10), ST_TIME.entry_time, 23) = CONVERT(CHAR(10), GETDATE(), 23)*/
         --ORDER BY ST_TIME.entry_time desc , MRP    
         
@@ -125,7 +127,7 @@ export const fetchManufacturingStatus = async (lineType) => {
          AND PA.description not like (N'%멀티%')
          AND PA.description not like (N'%쿠팡%')
          AND LINE_DETAIL_S like '${lineType}%'
-        
+         AND POI.description = CONVERT(CHAR(10), GETDATE(), 23)
         `
     return postPDSSQL(sql)
 }
