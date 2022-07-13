@@ -13,24 +13,27 @@ const Manufacturing = (props) => {
 
     let [result, setResult] = useState([])
     let [lineType, setLineType] = useState('')
+    let [MRPType, setMRPType] = useState('')
 
     useEffect(()=>{
         let interval;
         let index = {current: 0};
-        fetchManufacturingStatus(lineType).then(res=>{
+        fetchManufacturingStatus(lineType, MRPType).then(res=>{
 
             fetchResults(res.data.rows, index);
 
             interval = setInterval(()=>{
                 fetchResults(res.data.rows, index);
-            }, 5000)
+            }, 7000)
         });
 
         return () => clearInterval(interval);
-    }, [lineType]);
+    }, [lineType, MRPType]);
 
     const fetchResults = async (products, index) => {
+        let MRPMap = {};
         let productTagMap = products.reduce((r, e)=>{
+            MRPMap[e.PO_NUMBER_S] = e.MRP;
             if(!r.hasOwnProperty(e.PO_NUMBER_S)){
                 r[e.PO_NUMBER_S] = {};
             }
@@ -41,15 +44,23 @@ const Manufacturing = (props) => {
             return r
         }, {})
 
-        let productKeys = Object.keys(productTagMap).map(e=>parseInt(e));
-        let batchSize = 5;
-        let maxIndex = Math.floor(productKeys.length / batchSize);
+        let productKeys = Object.keys(productTagMap).sort((a, b)=>{
+            return MRPMap[a].localeCompare(MRPMap[b])
+        }).map(e=>parseInt(e));
+        let batchSize = 4;
         let candidates = productKeys.slice(index.current * batchSize, (index.current + 1) * batchSize);
-        let currentProducts = products.filter(e=>candidates.includes(e.PO_NUMBER_S))
+        let productMap = {}
+        products.forEach(e=>{
+            productMap[parseInt(e.PO_NUMBER_S)] = e
+        })
+        let currentProducts = candidates.map(e=>productMap[e])
+
+        let maxIndex = Math.ceil(productKeys.length / batchSize) - 1;
         index.current = index.current >= maxIndex ? 0 : index.current + 1;
 
         let separator = ':'
-        let tagsMap = currentProducts.reduce((r, e)=>{
+        let tagsMap = products.reduce((r, e)=>{
+            if(candidates.indexOf(parseInt(e.PO_NUMBER_S)) < 0) return r
             let key = e.DB_NAME + separator + e.TAG_TABLE
             if(r.hasOwnProperty(key)){
                 r[key].push(e.TAG_INDEX)
@@ -68,25 +79,26 @@ const Manufacturing = (props) => {
             res.data.rows.forEach(e=>{
                 let key = dbName + '/' + e.TagIndex
                 if(!tagValues.hasOwnProperty(key)){
-                    tagValues[key] = parseInt(e.Val)
+                    tagValues[key] = parseInt(e.Val) || 0
                 }
             })
         }
+        console.log('Current products', currentProducts)
 
-        let unique = {}
-        currentProducts.forEach(e=>{
-            unique[e.PO_NUMBER_S] = e
-        })
-
-        let result = Object.entries(unique).map(([poNumber, e])=>{
-            let lines = productTagMap[poNumber] || []
+        let result = Object.entries(Object.assign({}, currentProducts)).sort(([indexA, a], [indexB, b])=>{
+            return a.MRP.localeCompare(b.MRP)
+        }).map(([poNumber, e])=>{
+            let lines = productTagMap[e.PO_NUMBER_S] || []
             e.innerValue = 0
             e.outerValue = 0
+
+            console.log('lines', lines)
+            console.log('tagValues', tagValues)
             Object.entries(lines).forEach(([type, tags])=>{
                 if(type.endsWith('OUTER')){
-                    e.outerValue += tags.reduce((r, e)=>tagValues[e] || r, 0)
+                    e.outerValue += tags.reduce((r, x)=>r + tagValues[x] || 0, 0)
                 }else{
-                    e.innerValue += tags.reduce((r, e)=>r + tagValues[e] || r, 0)
+                    e.innerValue += tags.reduce((r, x)=>r + tagValues[x] || 0, 0)
                 }
             })
             return e
@@ -95,13 +107,14 @@ const Manufacturing = (props) => {
     }
 
     return (
-        <div style={{minWidth: '100vw', height: '100vh', overflow: 'auto', backgroundColor: '#212121', fontWeight: 'bolder'}}>
+        <div style={{minWidth: '100%', height: '100vh', overflow: 'auto', backgroundColor: '#212121', fontWeight: 'bolder'}}>
             <div style={{padding: '10px'}}>
                 <div style={{fontSize: window.innerWidth * 0.0274, color: '#fff', display: 'flex', justifyContent: 'space-between'}}>
                     <div style={{display: 'flex', alignItems: 'center'}}>
                         <div>{new Moment().format('YYYY-MM-DD')}</div>
                         <Select
-                            defaultValue=""
+                            // defaultValue=""
+                            placeholder={'라인을 선택해주세요.'}
                             className={'manufacturing-select'}
                             style={{width: 200, marginLeft: 20, backgroundColor: '#212121'}}
                             onChange={(val)=>{
@@ -110,21 +123,39 @@ const Manufacturing = (props) => {
                             <Select.Option value="">전체</Select.Option>
                             <Select.Option value="FROZEN">냉동</Select.Option>
                             <Select.Option value="SEASONING">조미</Select.Option>
-                            <Select.Option value="DRY">라면건면</Select.Option>
-                            <Select.Option value="FRY">라면유탕면</Select.Option>
+                            <Select.Option value="DRY">건면</Select.Option>
+                            <Select.Option value="FRY">유탕면</Select.Option>
                         </Select>
+                        <Select
+                            // defaultValue=""
+                            placeholder={'제품군을 선택해주세요.'}
+                            className={'manufacturing-select'}
+                            style={{width: 200, marginLeft: 20, backgroundColor: '#212121'}}
+                            onChange={(val)=>{
+                                setMRPType(val)
+                            }}>
+                            <Select.Option value="">전체</Select.Option>
+                            <Select.Option value="M01">냉동밥</Select.Option>
+                            <Select.Option value="M02">오니기리</Select.Option>
+                            <Select.Option value="M03">냉동만두</Select.Option>
+                            <Select.Option value="M04">튀김</Select.Option>
+                            <Select.Option value="M05">핫도그</Select.Option>
+                            <Select.Option value="M06">추출농축</Select.Option>
+                            <Select.Option value="M07">HMR</Select.Option>
+                            <Select.Option value="M08">조미소스</Select.Option>
+                            <Select.Option value="M09">조미분말</Select.Option>
+                            <Select.Option value="M10">냉장만두</Select.Option>
+                            <Select.Option value="M11">건면 봉지</Select.Option>
+                            <Select.Option value="M12">유탕면 봉지</Select.Option>
+                            <Select.Option value="M14">건면 용기</Select.Option>
+                            <Select.Option value="M15">유탕면 용기`</Select.Option>                        </Select>
                     </div>
                     <div style={{display: 'flex'}}>
                         <TimeClock/>
-                        <div style={{marginLeft: 10}}>
-                            {urlParams.hidesider ?
-                                <ShrinkOutlined
-                                    onClick={()=>{window.location = '?'}}
-                                /> :
-                                <ArrowsAltOutlined
-                                    onClick={()=>{window.location = '?hidesider=true'}}
-                                />
-                            }
+                        <div
+                            style={{marginLeft: 10}}
+                            onClick={()=>{window.location = urlParams.hidesider ? '?' : '?hidesider=true'}}>
+                            {urlParams.hidesider ? <ShrinkOutlined/> : <ArrowsAltOutlined/>}
                         </div>
                     </div>
                 </div>
