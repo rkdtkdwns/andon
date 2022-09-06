@@ -138,16 +138,18 @@ export const fetchManufacturingStatus = async (lineType, MRPType) => {
 export const fetchTagResultData = (dbName, tags, tableName) => {
     console.log(dbName);
     let now = new Moment()
+    // console.log('TAGS', tags.filter(e=>!!e).map(e=>`'${e}'`).join(','))
     let sql = `
         SELECT TagIndex, max(Val) as Val FROM (
             SELECT 
-                TOP 750
+                TOP 3000
                 TagIndex,
                 Val
             FROM ${tableName}
-            WHERE TagIndex in (${tags.filter(e=>!!e).join(',')}) 
+            WHERE TagIndex in (${tags.filter(e=>!!e).map(e=>`'${e}'`).join(',')}) 
                 AND Val is not null
-                AND DateAndTime > '${now.format('YYYY-MM-DD')}'
+                AND Val <> '0'
+                AND DateAndTime > '${now.format('YYYY-MM-DD 07:00:00')}'
             ORDER BY DateAndTime DESC
         ) a
         GROUP BY TagIndex

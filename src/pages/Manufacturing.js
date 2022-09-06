@@ -4,31 +4,47 @@ import {LeftOutlined, ShrinkOutlined, ArrowsAltOutlined} from "@ant-design/icons
 import { makeStyles } from "@material-ui/core/styles";
 import {fetchManufacturingStatus, fetchTagResultData, fetchTagHistory, fetchTagStats} from "../db_service/service";
 import Moment from 'moment';
+import {useHistory, useSearchParams} from "react-router-dom";
 
 
 
 const Manufacturing = (props) => {
     const classes = useStyles(props);
     const urlParams = window.location.search ? (Object.fromEntries(new URLSearchParams(window.location.search)) || {}) : {};
-
+    let batchSize = 5;
+    let startTime = new Moment();
     let [result, setResult] = useState([])
+    let [currentPage, setCurrentPage] = useState(0);
     let [lineType, setLineType] = useState('')
     let [MRPType, setMRPType] = useState('')
 
     useEffect(()=>{
         let interval;
         let index = {current: 0};
-        fetchManufacturingStatus(lineType, MRPType).then(res=>{
+        getData(index);
+        interval = setInterval(()=>{
+            getData(index);
+        }, 10000)
 
-            fetchResults(res.data.rows, index);
-
-            interval = setInterval(()=>{
-                fetchResults(res.data.rows, index);
-            }, 7000)
-        });
-
-        return () => clearInterval(interval);
+        return () => {
+            clearInterval(interval);
+        }
     }, [lineType, MRPType]);
+
+    const getData = (index) => {
+
+        fetchManufacturingStatus(lineType, MRPType).then(async (res)=>{
+            if(new Moment().diff(startTime, 'minutes') >= 30){
+                window.location.reload()
+            }
+            await fetchResults(res.data.rows, index);
+            setCurrentPage(index.current)
+            index.current = index.current + 1
+            if(index.current >= Math.ceil(res.data.rows.length / batchSize) - 1){
+                index.current = 0
+            }
+        });
+    };
 
     const fetchResults = async (products, index) => {
         let MRPMap = {};
@@ -47,16 +63,17 @@ const Manufacturing = (props) => {
         let productKeys = Object.keys(productTagMap).sort((a, b)=>{
             return MRPMap[a].localeCompare(MRPMap[b])
         }).map(e=>parseInt(e));
-        let batchSize = 4;
-        let candidates = productKeys.slice(index.current * batchSize, (index.current + 1) * batchSize);
+        // let batchSize = 100;
+        // let candidates = productKeys.slice(index.current * batchSize, (index.current + 1) * batchSize);
+        let candidates = productKeys
         let productMap = {}
         products.forEach(e=>{
             productMap[parseInt(e.PO_NUMBER_S)] = e
         })
         let currentProducts = candidates.map(e=>productMap[e])
 
-        let maxIndex = Math.ceil(productKeys.length / batchSize) - 1;
-        index.current = index.current >= maxIndex ? 0 : index.current + 1;
+        // let maxIndex = Math.ceil(productKeys.length / batchSize) - 1;
+        // index.current = index.current >= maxIndex ? 0 : index.current + 1;
 
         let separator = ':'
         let tagsMap = products.reduce((r, e)=>{
@@ -83,7 +100,6 @@ const Manufacturing = (props) => {
                 }
             })
         }
-        console.log('Current products', currentProducts)
 
         let result = Object.entries(Object.assign({}, currentProducts)).sort(([indexA, a], [indexB, b])=>{
             return a.MRP.localeCompare(b.MRP)
@@ -92,8 +108,6 @@ const Manufacturing = (props) => {
             e.innerValue = 0
             e.outerValue = 0
 
-            console.log('lines', lines)
-            console.log('tagValues', tagValues)
             Object.entries(lines).forEach(([type, tags])=>{
                 if(type.endsWith('OUTER')){
                     e.outerValue += tags.reduce((r, x)=>r + tagValues[x] || 0, 0)
@@ -107,13 +121,16 @@ const Manufacturing = (props) => {
     }
 
     return (
-        <div style={{minWidth: '100%', height: '100vh', overflow: 'auto', backgroundColor: '#212121', fontWeight: 'bolder'}}>
+        <div style={{
+            minWidth: '100%', height: '100vh', overflow: 'auto',
+            backgroundColor: '#212121', fontWeight: 'bolder',
+            display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
+        }}>
             <div style={{padding: '10px'}}>
                 <div style={{fontSize: window.innerWidth * 0.0274, color: '#fff', display: 'flex', justifyContent: 'space-between'}}>
                     <div style={{display: 'flex', alignItems: 'center'}}>
                         <div>{new Moment().format('YYYY-MM-DD')}</div>
                         <Select
-                            // defaultValue=""
                             placeholder={'라인을 선택해주세요.'}
                             className={'manufacturing-select'}
                             style={{width: 200, marginLeft: 20, backgroundColor: '#212121'}}
@@ -127,7 +144,6 @@ const Manufacturing = (props) => {
                             <Select.Option value="FRY">유탕면</Select.Option>
                         </Select>
                         <Select
-                            // defaultValue=""
                             placeholder={'제품군을 선택해주세요.'}
                             className={'manufacturing-select'}
                             style={{width: 200, marginLeft: 20, backgroundColor: '#212121'}}
@@ -178,20 +194,30 @@ const Manufacturing = (props) => {
                     </tr>
                 </thead>
                 <tbody>
-                {result.map((e, i)=>{
-                    let innerValue = Math.min(e['PLANNED'], e['innerValue'])
+                {new Array(5).fill(1).map((x, i)=>{
+                    let ci = (currentPage * batchSize) + i
+                    let e = result[ci] || {}
+                    let innerValue = e['innerValue']
                     return (
                         <tr key={i} style={{textAlign: 'center'}}>
-                            <td className={classes.td}>{e['PART_NAME']}</td>
-                            <td className={classes.td}>{e['PLANNED']} {e['UOM']}</td>
-                            <td className={classes.td}>{innerValue} {e['UOM']}</td>
-                            <td className={classes.td}>{e['outerValue']} BOX</td>
-                            <td className={classes.td}>{e['PLANNED'] ? (innerValue/e['PLANNED'] * 100).toFixed(1) : 0}%</td>
+                            <td className={classes.td}>{e['PART_NAME'] || '-'}</td>
+                            <td className={classes.td}>{e['PLANNED']} {e['UOM'] || '-'}</td>
+                            <td className={classes.td}>{innerValue ? innerValue + ' ' + e['UOM'] : '-'}</td>
+                            <td className={classes.td}>{e['outerValue'] ? e['outerValue'] + ' BOX' : '-'}</td>
+                            <td className={classes.td}>{e['PLANNED'] ? (innerValue/e['PLANNED'] * 100).toFixed(1) + '%' : '-'}</td>
                         </tr>
                     )
                 })}
                 </tbody>
             </table>
+            </div>
+            <div style={{width: '100%'}}>
+                <table  style={{width: '100%', color: '#fff', borderCollapse: 'collapse', border: '1px solid #fff'}}>
+                    <tr style={{textAlign: 'center'}}>
+                        <td className={classes.bottomTd}>전체 진척율(%)</td>
+                        <td className={classes.bottomTd}>{(result.reduce((r, e)=>r+(e.innerValue || 0), 0)/result.reduce((r, e)=>r+(e.PLANNED || 0), 0) * 100).toFixed(1)}%</td>
+                    </tr>
+                </table>
             </div>
         </div>
     );
@@ -228,9 +254,18 @@ const styles = (theme) => ({
     },
     td: {
         border: '1px solid #fff',
-        padding: '30px 10px',
-        fontSize: window.innerWidth * 0.026,
+        paddingLeft: 10,
+        paddingRight: 10,
+        paddingTop: window.innerHeight * 0.028,
+        paddingBottom: window.innerHeight * 0.028,
+        fontSize: window.innerWidth * 0.023,
     },
+    bottomTd: {
+        border: '1px solid #fff',
+        fontSize: window.innerWidth * 0.026,
+        minWidth: window.innerWidth * 0.025 * 6,
+        color: 'yellow'
+    }
 });
 
 

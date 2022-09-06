@@ -33,6 +33,7 @@ function App() {
                     <Route path={`/`} element={<MachineList/>}/>
                     <Route path={`/${PATH_MACHINE}`} element={<MachineList/>}/>
                     <Route path={`/${PATH_MANUFACTURING}`} element={<Manufacturing/>}/>
+                    <Route path={`/mf`} element={<Manufacturing/>}/>
                 </Routes>
             </Layout>
         </Layout>
