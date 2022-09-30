@@ -5,6 +5,7 @@ import { makeStyles } from "@material-ui/core/styles";
 import {fetchManufacturingStatus, fetchTagResultData, fetchTagHistory, fetchTagStats} from "../db_service/service";
 import Moment from 'moment';
 import {useHistory, useSearchParams} from "react-router-dom";
+import {commaNum} from "../utils/string";
 
 
 
@@ -39,9 +40,12 @@ const Manufacturing = (props) => {
             }
             await fetchResults(res.data.rows, index);
             setCurrentPage(index.current)
-            index.current = index.current + 1
-            if(index.current >= Math.ceil(res.data.rows.length / batchSize) - 1){
+            let uniqueKeys = Array.from(new Set(res.data.rows.map(e=>e.PO_NUMBER_S)));
+            console.log('unique keys', uniqueKeys.length)
+            if(index.current >= Math.ceil(uniqueKeys.length / batchSize) - 1){
                 index.current = 0
+            }else{
+                index.current += 1
             }
         });
     };
@@ -129,7 +133,7 @@ const Manufacturing = (props) => {
             <div style={{padding: '10px'}}>
                 <div style={{fontSize: window.innerWidth * 0.0274, color: '#fff', display: 'flex', justifyContent: 'space-between'}}>
                     <div style={{display: 'flex', alignItems: 'center'}}>
-                        <div>{new Moment().format('YYYY-MM-DD')}</div>
+                        <div>{new Moment().utcOffset('+0900').format('YYYY-MM-DD')}</div>
                         <Select
                             placeholder={'라인을 선택해주세요.'}
                             className={'manufacturing-select'}
@@ -201,9 +205,9 @@ const Manufacturing = (props) => {
                     return (
                         <tr key={i} style={{textAlign: 'center'}}>
                             <td className={classes.td}>{e['PART_NAME'] || '-'}</td>
-                            <td className={classes.td}>{e['PLANNED']} {e['UOM'] || '-'}</td>
-                            <td className={classes.td}>{innerValue ? innerValue + ' ' + e['UOM'] : '-'}</td>
-                            <td className={classes.td}>{e['outerValue'] ? e['outerValue'] + ' BOX' : '-'}</td>
+                            <td className={classes.td}>{commaNum(e['PLANNED'])} {e['UOM'] || '-'}</td>
+                            <td className={classes.td}>{innerValue ? commaNum(innerValue) + ' ' + e['UOM'] : '-'}</td>
+                            <td className={classes.td}>{e['outerValue'] ? commaNum(e['outerValue']) + ' BOX' : '-'}</td>
                             <td className={classes.td}>{e['PLANNED'] ? (innerValue/e['PLANNED'] * 100).toFixed(1) + '%' : '-'}</td>
                         </tr>
                     )
@@ -227,11 +231,11 @@ export default Manufacturing;
 
 
 const TimeClock = (props) => {
-    let [now, setNow] = useState(new Moment())
+    let [now, setNow] = useState(new Moment().utcOffset('+0900'))
 
     useEffect(()=>{
         let interval = setInterval(()=>{
-            setNow(new Moment())
+            setNow(new Moment().utcOffset('+0900'))
         }, 1000)
 
         return ()=>{clearInterval(interval)}
