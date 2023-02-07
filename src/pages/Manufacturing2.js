@@ -2,7 +2,13 @@ import React, {useContext, useEffect, useState} from 'react';
 import {Typography, Descriptions, Button, Table, DatePicker, Space, Input, Modal, Spin, Select} from 'antd';
 import {LeftOutlined, ShrinkOutlined, ArrowsAltOutlined} from "@ant-design/icons";
 import { makeStyles } from "@material-ui/core/styles";
-import {fetchManufacturingStatus, fetchTagResultData, fetchTagHistory, fetchTagStats} from "../db_service/service";
+import {
+    fetchManufacturingStatus,
+    fetchTagResultData,
+    fetchTagHistory,
+    fetchTagStats,
+    fetchManufacturing2Status
+} from "../db_service/service";
 import Moment from 'moment';
 import {useNavigate, useSearchParams} from "react-router-dom";
 import {commaNum} from "../utils/string";
@@ -18,14 +24,12 @@ const parseQuery = (queryString) => {
 }
 
 
-const Manufacturing = (props) => {
+const Manufacturing2 = (props) => {
     const classes = useStyles(props);
     // const urlParams = window.location.search ? (Object.fromEntries(new URLSearchParams(window.location.search)) || {}) : {};
     // const urlParams = window.location.search ? parseQuery(window.location.search) : {}
     const urlParams = {}
-    const navigate = useNavigate();
-    let batchSize = 5;
-    let startTime = new Moment();
+    let batchSize = 2;
     let [result, setResult] = useState([])
     let [currentPage, setCurrentPage] = useState(0);
     let [lineType, setLineType] = useState('')
@@ -45,7 +49,7 @@ const Manufacturing = (props) => {
     }, [lineType, MRPType]);
     const getData = (index) => {
 
-        fetchManufacturingStatus(lineType, MRPType).then(async (res)=>{
+        fetchManufacturing2Status(lineType, MRPType).then(async (res)=>{
             await fetchResults(res.data.rows, index);
             setCurrentPage(index.current)
             let uniqueKeys = Array.from(new Set(res.data.rows.map(e=>e.PO_NUMBER_S)));
@@ -154,37 +158,34 @@ const Manufacturing = (props) => {
                                 setLineType(val)
                                 // updateSearchParams('lineType', val)
                             }}>
-                            <Select.Option value="">전체</Select.Option>
-                            <Select.Option value="FROZEN">냉동</Select.Option>
-                            <Select.Option value="SEASONING">조미</Select.Option>
                             <Select.Option value="DRY">건면</Select.Option>
                             <Select.Option value="FRY">유탕면</Select.Option>
                         </Select>
-                        <Select
-                            placeholder={'제품군을 선택해주세요.'}
-                            className={'manufacturing-select'}
-                            style={{width: 200, marginLeft: 20, backgroundColor: '#212121'}}
-                            value={MRPType || null}
-                            onChange={(val)=>{
-                                setMRPType(val)
-                                // updateSearchParams('MRPType', val)
-                            }}>
-                            <Select.Option value="">전체</Select.Option>
-                            <Select.Option value="M01">냉동밥</Select.Option>
-                            <Select.Option value="M02">오니기리</Select.Option>
-                            <Select.Option value="M03">냉동만두</Select.Option>
-                            <Select.Option value="M04">튀김</Select.Option>
-                            <Select.Option value="M05">핫도그</Select.Option>
-                            <Select.Option value="M06">추출농축</Select.Option>
-                            <Select.Option value="M07">HMR</Select.Option>
-                            <Select.Option value="M08">조미소스</Select.Option>
-                            <Select.Option value="M09">조미분말</Select.Option>
-                            <Select.Option value="M10">냉장만두</Select.Option>
-                            <Select.Option value="M11">건면 봉지</Select.Option>
-                            <Select.Option value="M12">유탕면 봉지</Select.Option>
-                            <Select.Option value="M14">건면 용기</Select.Option>
-                            <Select.Option value="M15">유탕면 용기`</Select.Option>
-                        </Select>
+                        {/*<Select*/}
+                        {/*    placeholder={'제품군을 선택해주세요.'}*/}
+                        {/*    className={'manufacturing-select'}*/}
+                        {/*    style={{width: 200, marginLeft: 20, backgroundColor: '#212121'}}*/}
+                        {/*    value={MRPType || null}*/}
+                        {/*    onChange={(val)=>{*/}
+                        {/*        setMRPType(val)*/}
+                        {/*        // updateSearchParams('MRPType', val)*/}
+                        {/*    }}>*/}
+                        {/*    <Select.Option value="">전체</Select.Option>*/}
+                        {/*    <Select.Option value="M01">냉동밥</Select.Option>*/}
+                        {/*    <Select.Option value="M02">오니기리</Select.Option>*/}
+                        {/*    <Select.Option value="M03">냉동만두</Select.Option>*/}
+                        {/*    <Select.Option value="M04">튀김</Select.Option>*/}
+                        {/*    <Select.Option value="M05">핫도그</Select.Option>*/}
+                        {/*    <Select.Option value="M06">추출농축</Select.Option>*/}
+                        {/*    <Select.Option value="M07">HMR</Select.Option>*/}
+                        {/*    <Select.Option value="M08">조미소스</Select.Option>*/}
+                        {/*    <Select.Option value="M09">조미분말</Select.Option>*/}
+                        {/*    <Select.Option value="M10">냉장만두</Select.Option>*/}
+                        {/*    <Select.Option value="M11">건면 봉지</Select.Option>*/}
+                        {/*    <Select.Option value="M12">유탕면 봉지</Select.Option>*/}
+                        {/*    <Select.Option value="M14">건면 용기</Select.Option>*/}
+                        {/*    <Select.Option value="M15">유탕면 용기`</Select.Option>*/}
+                        {/*</Select>*/}
                     </div>
                     <div style={{display: 'flex'}}>
                         <TimeClock/>
@@ -199,51 +200,90 @@ const Manufacturing = (props) => {
                     style={{
                         border: '1px solid #fff', letterSpacing: '30px', color: '#fff',
                         fontSize: window.innerWidth * 0.022, textAlign: 'center'
-                }}
-                >
-                    생산실적현황
+                    }}>생산실적현황</div>
+                <div style={{display: 'flex'}}>
+                    {new Array(batchSize).fill(1).map((x, i)=>{
+                        let ci = (currentPage * batchSize) + i
+                        let e = result[ci] || {}
+                        if(i % 2 === 0 ) {
+                            e = result.find(e => ['M14', 'M15'].includes(e.MRP))
+                        } else {
+                            e = result.find(e => ['M11', 'M12'].includes(e.MRP))
+                        }
+                        let innerValue = e?.innerValue
+                        return (
+                            <div style={{width: '50%'}}>
+                                <div className={classes.name}>{e && e['PART_NAME'] || '-'}</div>
+                                <div style={{display: 'flex'}}>
+                                    <div style={{width: '50%'}} className={classes.title}>
+                                        목표
+                                    </div>
+                                    <div style={{width: '50%'}} className={classes.title}>
+                                        실적
+                                    </div>
+                                </div>
+                                <div style={{display: 'flex'}}>
+                                    <div style={{width: '33.333%'}} className={classes.title}>
+                                        <div style={{margin: '50% 0', color: 'yellow'}}>
+                                            {e && commaNum(e['PLANNED'])} <br/>
+                                            {e && e['UOM'] || '-'}
+                                        </div>
+                                    </div>
+                                    <div style={{width: '33.333%'}}>
+                                        <div style={{
+                                            height: '50%', borderBottom: '1px solid white'
+                                        }} className={classes.title2}>
+                                            외포장실적<br/>
+                                            {i % 2 === 0 ? '(용기면)' : '(봉지면)'}
+                                        </div>
+                                        <div style={{height: '50%'}} className={classes.title2}>
+                                            내포장실적<br/>
+                                            {i % 2 === 0 ? '(용기면)' : '(봉지면)'}
+                                        </div>
+                                    </div>
+                                    <div style={{width: '33.333%'}} className={classes.title}>
+                                        <div style={{
+                                            height: '50%', borderBottom: '1px solid white', color: 'yellow'
+                                        }} className={classes.title2}>
+                                            {e && e['outerValue'] ? commaNum(e['outerValue']) + ' BOX' : '-'}
+                                        </div>
+                                        <div style={{
+                                            height: '50%', color: 'yellow'
+                                        }} className={classes.title2}>
+                                            {e && innerValue ? commaNum(innerValue) + ' ' + e['UOM'] : '-'}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style={{display: 'flex'}}>
+                                    <div style={{width: '33.333%'}} className={classes.title}>
+                                        유통기한
+                                    </div>
+                                    <div
+                                        style={{width: '66.666%', color: 'yellow'}}
+                                        className={classes.title}>
+                                        {e?.Expire_Date || '-'}
+                                    </div>
+                                </div>
+                                <div style={{display: 'flex'}}>
+                                    <div style={{width: '33.333%'}} className={classes.title}>
+                                        달성률(%)
+                                    </div>
+                                    <div
+                                        style={{width: '66.666%', color: 'yellow'}}
+                                        className={classes.title}>
+                                        {e?.PLANNED ? (innerValue/e['PLANNED'] * 100).toFixed(1) + '%' : '-'}
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    })}
                 </div>
-            <table style={{width: '100%', color: '#fff', borderCollapse: 'collapse', border: '1px solid #fff'}}>
-                <thead>
-                    <tr>
-                        <th className={classes.th}>품 목</th>
-                        <th className={classes.th}>금일 목표</th>
-                        <th className={classes.th}>내포장실적</th>
-                        <th className={classes.th}>외포장실적</th>
-                        <th className={classes.th}>달성률</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {new Array(5).fill(1).map((x, i)=>{
-                    let ci = (currentPage * batchSize) + i
-                    let e = result[ci] || {}
-                    let innerValue = e['innerValue']
-                    return (
-                        <tr key={i} style={{textAlign: 'center'}}>
-                            <td className={classes.td}>{e['PART_NAME'] || '-'}</td>
-                            <td className={classes.td}>{commaNum(e['PLANNED'])} {e['UOM'] || '-'}</td>
-                            <td className={classes.td}>{innerValue ? commaNum(innerValue) + ' ' + e['UOM'] : '-'}</td>
-                            <td className={classes.td}>{e['outerValue'] ? commaNum(e['outerValue']) + ' BOX' : '-'}</td>
-                            <td className={classes.td}>{e['PLANNED'] ? (innerValue/e['PLANNED'] * 100).toFixed(1) + '%' : '-'}</td>
-                        </tr>
-                    )
-                })}
-                </tbody>
-            </table>
-            </div>
-            <div style={{width: '100%'}}>
-                <table  style={{width: '100%', color: '#fff', borderCollapse: 'collapse', border: '1px solid #fff'}}>
-                    <tr style={{textAlign: 'center'}}>
-                        <td className={classes.bottomTd}>전체 진척율(%)</td>
-                        <td className={classes.bottomTd}>{(result.reduce((r, e)=>r+(e.innerValue || 0), 0)/result.reduce((r, e)=>r+(e.PLANNED || 0), 0) * 100).toFixed(1)}%</td>
-                    </tr>
-                </table>
             </div>
         </div>
     );
 };
 
-export default Manufacturing;
+export default Manufacturing2;
 
 
 const TimeClock = (props) => {
@@ -285,6 +325,31 @@ const styles = (theme) => ({
         fontSize: window.innerWidth * 0.026,
         minWidth: window.innerWidth * 0.025 * 6,
         color: 'yellow'
+    },
+    name: {
+        color: '#fff',
+        textAlign: 'center',
+        border: '1px solid #fff',
+        paddingTop: window.innerHeight * 0.015,
+        paddingBottom: window.innerHeight * 0.015,
+        fontSize: window.innerWidth * 0.02,
+        verticalAlign: 'middle',
+    },
+    title: {
+        color: '#fff',
+        textAlign: 'center',
+        border: '1px solid #fff',
+        fontSize: window.innerWidth * 0.027,
+        verticalAlign: 'middle',
+    },
+    title2: {
+        color: '#fff',
+        textAlign: 'center',
+        border: '1px solid #fff',
+        paddingTop: window.innerHeight * 0.03,
+        paddingBottom: window.innerHeight * 0.03,
+        fontSize: window.innerWidth * 0.025,
+        verticalAlign: 'middle',
     }
 });
 

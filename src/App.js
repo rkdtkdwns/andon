@@ -5,6 +5,7 @@ import {Layout, Menu} from "antd";
 import {PATH_GENERAL, PATH_MANUFACTURING, PATH_MACHINE} from "./router/paths";
 import MachineList from "./pages/MachineList";
 import Manufacturing from "./pages/Manufacturing";
+import Manufacturing2 from "./pages/Manufacturing2";
 
 const {Header, Sider} = Layout;
 
@@ -34,6 +35,7 @@ function App() {
                     <Route path={`/${PATH_MACHINE}`} element={<MachineList/>}/>
                     <Route path={`/${PATH_MANUFACTURING}`} element={<Manufacturing/>}/>
                     <Route path={`/mf`} element={<Manufacturing/>}/>
+                    <Route path={`/mf2`} element={<Manufacturing2/>}/>
                 </Routes>
             </Layout>
         </Layout>

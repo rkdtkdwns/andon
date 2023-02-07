@@ -1,5 +1,5 @@
 import React, {useContext, useEffect, useState} from 'react';
-import {Input, Typography, Button, AutoComplete, Space, DatePicker} from 'antd';
+import {Input, Typography, Button, AutoComplete, Space, DatePicker, Select} from 'antd';
 import { makeStyles } from "@material-ui/core/styles";
 import {
 } from "../db_service/service";
@@ -52,6 +52,20 @@ const MachineList = (props) => {
 
             />}
             <Space direction={'horizontal'}>
+                <Select
+                    placeholder={'라인을 선택해주세요.'}
+                    style={{width: 200, marginLeft: 20}}
+                    value={prodLine || ''}
+                    onChange={(val)=>{
+                        setProdLine(val)
+                        // updateSearchParams('MRPType', val)
+                    }}>
+                    <Select.Option value="">전체</Select.Option>
+                    <Select.Option value="112">조미</Select.Option>
+                    <Select.Option value="113">냉동</Select.Option>
+                    <Select.Option value="152">건면</Select.Option>
+                    <Select.Option value="153">유탕</Select.Option>
+                </Select>
                 <Input
                     placeholder={'공정라인을 입력해주세요'}
                     value={prodLine}

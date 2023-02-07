@@ -52,6 +52,7 @@ export const fetchManufacturingStatus = async (lineType, MRPType) => {
             , LINE_DETAIL_S
             , LINE_NUMBER_I
             , PO.order_number AS ORDER_NUM
+            , CAST(isnull(UDA_P.PART_M30_CUSTOM_S,1) AS INT) as PART_M30_CUSTOM_S
         FROM PROCESS_ORDER_ITEM AS POI
             INNER JOIN PROCESS_ORDER AS PO
                 ON PO.order_key = POI.order_key
@@ -93,6 +94,7 @@ export const fetchManufacturingStatus = async (lineType, MRPType) => {
                   , LINE_DETAIL_S
                   , LINE_NUMBER_I
                   , PO.order_key AS 'ORDER NUM'
+                  , CAST(isnull(UDA.PART_M30_CUSTOM_S, 1) AS INT) as PART_M30_CUSTOM_S
              FROM   PROCESS_ORDER_ITEM AS POI
                     INNER JOIN PROCESS_ORDER AS PO
                             ON PO.order_key = POI.order_key
@@ -135,16 +137,75 @@ export const fetchManufacturingStatus = async (lineType, MRPType) => {
     return postPDSSQL(sql)
 }
 
+export const fetchManufacturing2Status = async (lineType, MRPType) => {
+    let sql = `
+        SELECT  PO.order_key AS N'PO_NUMBER_S'
+              , PA.description AS N'PART_NAME'
+              , Isnull(CONVERT(NUMERIC(13, 0), dbo.Ramvnumeric(POI.quantity)), 0) AS N'PLANNED'
+              , dbo.raMVUoM(POI.quantity) AS 'UOM'
+              , UDA.part_dispo_custom_s AS 'MRP'
+              , TAG.DB_NAME
+              , TAG.TAG_INDEX
+              , TAG.TAG_TABLE
+              , LINE_DETAIL_S
+              , LINE_NUMBER_I
+              , PO.order_key AS 'ORDER NUM'
+          , CONVERT(VARCHAR(10), Dateadd(day, PA.shelf_life, Getdate()), 111) AS 'Expire_Date'
+        FROM   PROCESS_ORDER_ITEM AS POI
+        INNER JOIN PROCESS_ORDER AS PO
+            ON PO.order_key = POI.order_key
+        INNER JOIN OBJECT_STATE AS POI_OBJECT_STATE
+            ON POI.order_item_key = POI_OBJECT_STATE.object_key
+                AND POI_OBJECT_STATE.object_type = 112
+        INNER JOIN FSM_CONFIG_ITEM AS POI_FSM_CONFIG_ITEM
+            ON POI_OBJECT_STATE.fsm_config_item_key = POI_FSM_CONFIG_ITEM.fsm_config_item_key
+                AND POI_FSM_CONFIG_ITEM.fsm_relationship_name = 'CPG_ProcessOrderItem'
+        INNER JOIN STATE AS POI_STATE
+            ON POI_OBJECT_STATE.state_key = POI_STATE.state_key
+        INNER JOIN PART AS PA
+            ON PA.part_number = POI.part_number
+        INNER JOIN OBJECT_STATE_HISTORY as ST_TIME
+            ON PO.order_key = ST_TIME.object_key
+        INNER JOIN UDA_PART UDA ON PA.part_key = UDA.object_key
+        INNER JOIN AT_RA_ADN_LineInfo ADN ON UDA.part_dispo_custom_s = ADN.MRP_CODE_S
+        INNER JOIN AT_RA_ADN_LineInfo_TAG TAG ON ADN.atr_key = TAG.atr_key
+        WHERE ST_TIME.transition_name = 'Start'
+            AND ST_TIME.state_name = 'Running'
+            AND POI_STATE.state_name IN(N'Running' , N'Completing')
+            AND POI.part_number IN (
+                SELECT P.part_number
+                FROM   PART P
+                INNER JOIN UDA_PART U
+                    ON P.part_key = U.object_key
+                        AND U.part_dispo_custom_s IN ('M11', 'M14', 'M12', 'M15')
+                        AND P.part_number LIKE '5%'
+            )
+            AND CONVERT(CHAR(10), ST_TIME.entry_time, 23) = CONVERT(CHAR(10), GETDATE(), 23)
+            AND dbo.raMVUoM(POI.quantity) = 'ea'
+            AND PA.description not like (N'%멀티%')
+            AND PA.description not like (N'%쿠팡%')
+            AND LINE_DETAIL_S like '${lineType}%'
+            AND POI.description = CONVERT(CHAR(10), GETDATE(), 23)
+            AND MRP_CODE_S like '${MRPType}%'
+    `
+    return postPDSSQL(sql)
+}
+
 export const fetchTagResultData = (dbName, tags, tableName) => {
     console.log(dbName);
     let now = new Moment()
     // console.log('TAGS', tags.filter(e=>!!e).map(e=>`'${e}'`).join(','))
     let sql = `
-        SELECT TagIndex, max(Val) as Val FROM (
+    select * from (
+        select 
+        *, 
+        row_number() over (partition by TagIndex order by DateAndTime desc) as row_num
+        from (
             SELECT 
                 TOP 3000
                 TagIndex,
-                Val
+                Val,
+                DateAndTime
             FROM ${tableName}
             WHERE TagIndex in (${tags.filter(e=>!!e).map(e=>`'${e}'`).join(',')}) 
                 AND Val is not null
@@ -152,7 +213,7 @@ export const fetchTagResultData = (dbName, tags, tableName) => {
                 AND DateAndTime > '${now.format('YYYY-MM-DD 07:00:00')}'
             ORDER BY DateAndTime DESC
         ) a
-        GROUP BY TagIndex
+    ) b WHERE row_num = 1
     `
     return postSQL(sql, dbName)
 }

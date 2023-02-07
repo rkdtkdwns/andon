@@ -1,6 +1,6 @@
 import {create} from "apisauce";
 
-let url = 'http://localhost:3001/api/v1';
+let url = 'http://localhost:3000/api/v1';
 
 if(process.env.NODE_ENV === 'production'){
     url = 'http://172.21.6.251/api/v1';
