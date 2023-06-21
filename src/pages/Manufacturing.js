@@ -4,28 +4,13 @@ import {LeftOutlined, ShrinkOutlined, ArrowsAltOutlined} from "@ant-design/icons
 import { makeStyles } from "@material-ui/core/styles";
 import {fetchManufacturingStatus, fetchTagResultData, fetchTagHistory, fetchTagStats} from "../db_service/service";
 import Moment from 'moment';
-import {useNavigate, useSearchParams} from "react-router-dom";
 import {commaNum} from "../utils/string";
-
-const parseQuery = (queryString) => {
-    let query = {};
-    let pairs = (queryString[0] === '?' ? queryString.substr(1) : queryString).split('&');
-    for (let i = 0; i < pairs.length; i++) {
-        let pair = pairs[i].split('=');
-        query[pair[0]] = pair[1] || '';
-    }
-    return query;
-}
 
 
 const Manufacturing = (props) => {
     const classes = useStyles(props);
-    // const urlParams = window.location.search ? (Object.fromEntries(new URLSearchParams(window.location.search)) || {}) : {};
-    // const urlParams = window.location.search ? parseQuery(window.location.search) : {}
     const urlParams = {}
-    const navigate = useNavigate();
     let batchSize = 5;
-    let startTime = new Moment();
     let [result, setResult] = useState([])
     let [currentPage, setCurrentPage] = useState(0);
     let [lineType, setLineType] = useState('')
@@ -75,19 +60,16 @@ const Manufacturing = (props) => {
         let productKeys = Object.keys(productTagMap).sort((a, b)=>{
             return MRPMap[a].localeCompare(MRPMap[b])
         }).map(e=>parseInt(e));
-        // let batchSize = 100;
-        // let candidates = productKeys.slice(index.current * batchSize, (index.current + 1) * batchSize);
         let candidates = productKeys
         let productMap = {}
+        let dividerMap = {}
+        let separator = ':'
         products.forEach(e=>{
             productMap[parseInt(e.PO_NUMBER_S)] = e
+            dividerMap[e.DB_NAME + separator + e.TAG_INDEX] = e.PART_M30_CUSTOM_S
         })
         let currentProducts = candidates.map(e=>productMap[e])
 
-        // let maxIndex = Math.ceil(productKeys.length / batchSize) - 1;
-        // index.current = index.current >= maxIndex ? 0 : index.current + 1;
-
-        let separator = ':'
         let tagsMap = products.reduce((r, e)=>{
             if(candidates.indexOf(parseInt(e.PO_NUMBER_S)) < 0) return r
             let key = e.DB_NAME + separator + e.TAG_TABLE
@@ -105,18 +87,17 @@ const Manufacturing = (props) => {
             let [key, tags] = entries[i];
             let [dbName, tableName] = key.split(separator)
             let res = await fetchTagResultData(dbName, tags, tableName);
-            // console.log('DB', dbName);
-            // console.log('Data', res.data.rows);
             res.data.rows.forEach(e=>{
+                let divider = dividerMap[dbName + separator + e.TagIndex];
                 let key = dbName + '/' + e.TagIndex
                 if(!tagValues.hasOwnProperty(key)){
-                    tagValues[key] = parseInt((parseInt(e.Val) || 0) / e.PART_M30_CUSTOM_S)
+                    tagValues[key] = parseInt((parseInt(e.Val) || 0) / divider)
                 }
             })
         }
 
-        let result = Object.entries(Object.assign({}, currentProducts)).sort(([indexA, a], [indexB, b])=>{
-            return a.MRP.localeCompare(b.MRP)
+        let result = Object.entries(Object.assign({}, currentProducts)).sort(
+            ([indexA, a], [indexB, b])=>{return a.MRP.localeCompare(b.MRP)
         }).map(([poNumber, e])=>{
             let lines = productTagMap[e.PO_NUMBER_S] || []
             e.innerValue = e.innerValue || 0
